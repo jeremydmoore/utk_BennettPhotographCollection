@@ -53,10 +53,18 @@ def rotate_bound(image, angle, center=None, scale=1.0):
 
     # perform the actual rotation and return the image
     return cv2.warpAffine(image, M, (width_new, height_new), flags=cv2.INTER_CUBIC)
+    
 
-def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=False):
+def autocrop(image_path, compression=None, dpi=None, padding=0, rotate_odd_even=False):
+    
+    # set debug directory
+    debug_directory_path = image_path.parents[0].joinpath(f'{image_path.stem}_debug')
+    debug_directory_path.mkdir(exist_ok=True)
     
     # === AutoCrop
+    if not dpi:
+        image = Image.open(image_path)
+        dpi = image.info['dpi'][0]
 
     # load the image
     image = cv2.imread(str(image_path))
@@ -68,7 +76,12 @@ def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=F
     ratio = 6192 / image.shape[0]  # height of Fuji GFX50s sensor in pixels
     
     # clone image
-    #image_original = image.copy()
+    image_original = image.copy()
+    
+    # DEBUG: save image
+    pil_image = Image.fromarray(image)
+    test_jpg_path = debug_directory_path.joinpath('open_and_save.jpg')
+    pil_image.save(test_jpg_path)
     
     # resize image
     #image = img_qc.get_resized_cv_image(image, height=800)
@@ -80,10 +93,15 @@ def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=F
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     
     # apply Otsu's automatic thresholding
-    (T, thresh) = cv2.threshold(blurred, 0, 255, 
-                               cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-    # show thresholded image
-    #plt.imshow(thresh)
+    # (T, thresh) = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+    
+    # set a manual threshold
+    _, thresh = cv2.threshold(blurred, 127, 255, cv2.THRESH_BINARY_INV)
+    
+    # DEBUG: save thresholded image
+    pil_image = Image.fromarray(thresh, mode='L')
+    thresh_jpg_path = debug_directory_path.joinpath('threshold.jpg')
+    pil_image.save(thresh_jpg_path)
     
     # find the contours in the thresholded image keeping the external one
     _, contours, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -96,7 +114,7 @@ def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=F
     # loop over the contours individually
     for (i, c) in enumerate(cnts):
         # if the contour is not sufficiently large, ignore it
-        if cv2.contourArea(c) < 20000:  # use 20000 for scrapbook pages
+        if cv2.contourArea(c) < 500000:  # use 20000 for scrapbook pages
             continue
             
         # compute the rotated bounding box of the contour
@@ -105,9 +123,11 @@ def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=F
         box = np.int0(box)
         
         # DEBUG: draw found contour & show image
-        #clone = image.copy()
-        #cv2.drawContours(clone, [box], 0, (0, 0, 255), 2)
-        #plt.imshow(clone)
+        clone = image_original.copy()
+        cv2.drawContours(clone, [box], 0, (0, 0, 255), 2)
+        pil_image = Image.fromarray(clone)
+        contour_jpg_path = debug_directory_path.joinpath(f'contour_{str(i).zfill(3)}.jpg')
+        pil_image.save(contour_jpg_path)
         
         # re-order the points in tl, tr, br, bl order
         rect = img_qc.order_points(box)
@@ -149,7 +169,7 @@ def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=F
     # rotate original by theta from minAreaRect
     x *= ratio
     y *= ratio
-    # image_rotated = img_qc.rotate(image_original, theta, (x, y))
+    image_rotated = img_qc.rotate(image_original, theta, (x, y))
     
     # add padding (default hard-coded is 0 pixels)
     pixel_padding = int(padding)
@@ -167,26 +187,28 @@ def autocrop(image_path, compression=None, dpi=400, padding=0, rotate_odd_even=F
     endY = min(endY, 6192)
     
     # crop the image in memory
-    # image_cropped = image_rotated[int(startY):int(endY), int(startX):int(endX)]
+    image_cropped = image_rotated[int(startY):int(endY), int(startX):int(endX)]
     
     # create output directory and set output path
-#     output_directory_path = image_path.parents[0].joinpath('00_cropped')
-#     output_directory_path.mkdir(exist_ok=True)
-#     output_path = output_directory_path.joinpath(image_path.name)
+    output_directory_path = image_path.parents[0].joinpath('00_cropped')
+    output_directory_path.mkdir(exist_ok=True)
+    output_path = output_directory_path.joinpath(image_path.name)
     
     # convert to pillow Image
-#     image_cropped = cv2.cvtColor(image_cropped, cv2.COLOR_BGR2RGB)  # convert to RGB!
-#     pillow_image = Image.fromarray(image_cropped)
+    image_cropped = cv2.cvtColor(image_cropped, cv2.COLOR_BGR2RGB)  # convert to RGB!
+    pillow_image = Image.fromarray(image_cropped)
     
-#     dpi = float(dpi)  # dpi MUST be a float for Pillow
+    dpi = float(dpi)  # dpi MUST be a float for Pillow
         
-#     pillow_image.save(output_path, compression=compression, dpi=(dpi, dpi))
+    pillow_image.save(output_path, compression=compression, dpi=(dpi, dpi))
     
     crop_box = [int(startY), int(endY), int(startX), int(endX)]
     
     # round off theta to 3 digits
-    rotation_angle = round(angle, 3)
+    # rotation_angle = round(angle, 3)
+    rotation_angle = angle
     
+    # get angle of rotation and 
     if rotation_angle < 0:
         rotation_direction = 'ccw'
     else:
