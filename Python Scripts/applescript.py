@@ -13,28 +13,26 @@ def display_dialog(message):
 
 
 def get_user_input_int(value_name, default_value, attempts_left=5):
-    """
-    caveat emptor: currently does NOT check returned value against expected type
-    """
+    user_input = None
     # only process if the default value is of the expected input type
     if isinstance(default_value, int):
 
         command = [f'set value_name to text returned of (display dialog "Enter {value_name} (type: integer)\nAttempts left: {attempts_left}" default answer "{default_value}")', 'return value_name']
         applescript_user_input = python_list(command)
 
-        if applescript_user_input:
+        if user_input:
             # returned value should be a single string in a list
-            applescript_user_input = applescript_user_input[0]
+            user_input = user_input[0]
             try:
-                applescript_user_input = int(applescript_user_input)
+                user_input = int(user_input)
             except ValueError:
                 if attempts_left > 0:
                     attempts_left = attempts_left - 1
-                    applescript_user_input = get_user_input_int(value_name, default_value, attempts_left=attempts_left)
+                    user_input = get_user_input_int(value_name, default_value, attempts_left=attempts_left)
                 else:
-                    applescript_user_input = None
+                    user_input = None
 
-        return applescript_user_input
+    return user_input
 
 
 def python_list(command):
