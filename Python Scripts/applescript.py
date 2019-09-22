@@ -56,8 +56,9 @@ def process(command):
 
     return applescript_subprocess
 
-def process_script(path_to_script, args=None):
-    shell_input = ['osascript', str(path_to_script)]
+
+def process_script(script_path, args=None):
+    shell_input = ['osascript', str(script_path)]
     if args:
         if isinstance(args, list):
             for arg in args:
@@ -67,9 +68,12 @@ def process_script(path_to_script, args=None):
     applescript_subprocess = run(shell_input, encoding='utf-8', stdout=PIPE, stderr=PIPE)
     return applescript_subprocess
 
-def python_list_from_script(applescript_subprocess):
+
+def python_list_from_script(script_path, args=None):
+    applescript_subprocess = process_script(script_path, args)
     python_list = convert_applescript_output_to_python_list(applescript_subprocess)
     return python_list
+
 
 def create_script_and_process(command):
     pass

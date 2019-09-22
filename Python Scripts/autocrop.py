@@ -18,11 +18,11 @@ if __name__ == '__main__':
     selected_variants_list = co.get_selected_variants()
 
     # reset recipes
-    co.disable_recipes()
+    co.disable_all_recipes()
 
     # enable autocrop recipe and get output_folder/_extension
     # current_recipe_name, output_folder_path, output_extension = co.enable_recipe(autocrop_recipe_name)
-    recipe_subprocess = co.enable_recipe(autocrop_recipe_name)
+    _, autocrop_output_folder_path, autocrop_output_extension = co.enable_recipe(autocrop_recipe_name)
 
     # load first variant from list to get collection info for stuff, e.g. recipes
     # variant = co.Variant(selected_variants_list[0])

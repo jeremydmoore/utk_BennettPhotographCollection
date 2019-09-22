@@ -5,21 +5,36 @@ from pathlib import Path
 # ============ variables ============ #
 tell_co12 = 'Tell application \"Capture One 12\"'
 command_stub = ['use AppleScript version "2.4"', 'use scripting additions']
-scripts_dir_path = Path('/Users/jeremy/Library/Scripts/Capture One Scripts/')
+scripts_dir_path = Path('/Users/jeremy/Library/Scripts/')
+python_scripts_dir_path = scripts_dir_path.joinpath('Python Scripts')
+applescript_scripts_dir_path = scripts_dir_path.joinpath('AppleScript Scripts')
 
 
 # ============ functions ============ #
-def disable_recipes():
-    disable_recipes_script_path = scripts_dir_path.joinpath('Background Scripts', 'disable_recipes.scpt')
-    applescript.process_script(disable_recipes_script_path)
+def run_applescript_script(script_name, args=None):
+    script_path = applescript_scripts_dir_path.joinpath(script_name)
+    python_list = applescript.python_list_from_script(script_path, args)
+    return python_list
+
+
+def disable_all_recipes():
+    script_name = 'disable_all_recipes.scpt'
+    all_recipes_list = run_applescript_script(script_name)
+    return all_recipes_list
 
 
 def enable_recipe(recipe_name):
-    enable_recipe_script_path = scripts_dir_path.joinpath('Background Scripts', 'enable_recipe.scpt')
-    recipe_subprocess = applescript.process_script(enable_recipe_script_path, args=recipe_name)
-    python_list = applescript.python_list_from_script(recipe_subprocess)
-    applescript.display_dialog(f'enable recipe python list: {python_list}')
-    return python_list
+    """
+    Input (str): recipe_name to activate and set as current recipe
+
+    Returns (list): info for processed variants in capture_one_pro_12
+        [recipe_name, output_folder_path, output_extension]
+    """
+    script_name = 'enable_recipe.scpt'
+    # if isinstance(recipe_names, list):  # there are multiple recipes to enable
+        # for recipe_name in recipe_names:
+    output_info_list = run_applescript_script(script_name, args=recipe_name)
+    return output_info_list
 
 
 def get_selected_variants():
@@ -36,47 +51,12 @@ def get_selected_variants():
 
 
 def set_value():
+    # command = command_stub +
     pass
 
 
 def reset(value):
     pass
-
-
-# class Document():
-#
-#     def __init__(self, current_document):
-#
-#         # set current document to document
-#         command = command_stub + [f'{tell_co12} to set current document to document {current_document}']
-#         applescript.display_dialog(f'command: {command}')
-#         applescript.python_list(command)
-#
-#         # self.tell = f'{tell_co12} ¬ tell current document
-#         # Option + L to create multi-line Applescript
-#
-#         self.tell = f'{tell_co12} to tell current document'
-#
-#         # get name of current document
-#         command = command_stub + [f'{self.tell} to set document_name to (get name of current document)', 'return document_name']
-#         self.name = applescript.python_list(command)[0]  # should only be 1 value!
-#         applescript.display_dialog(f'document name: {self.name}')
-#
-#
-#         # command = [f'{self.tell} to set recipe_list to (get name of recipes)', 'return recipe_list']
-#         # command = [f'{self.tell} to set number to (get count of recipes)', 'return number']
-#         # number_of_recipes = int(applescript.python_list(command)[0])
-#         # applescript.display_dialog(f'# of recipes: {number_of_recipes}')
-#         # self.recipes_list = applescript.python_list(command)
-#         # applescript.display_dialog(f'Recipes: {self.recipes_list}')
-#
-#     def disable_recipes(self):
-#         applescript.display_dialog(f'document name: {self.name}')
-#         command = command_stub + [f'{self.tell} to repeat with counter from 1 to count of recipes', 'set the_recipe to item counter of recipes', 'set enabled of the_recipe to false']
-#         applescript.display_dialog(command)
-#         applescript.process(command)
-
-
 
 
 class Variant():
