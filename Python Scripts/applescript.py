@@ -18,7 +18,7 @@ def get_user_input_int(value_name, default_value, attempts_left=5):
     if isinstance(default_value, int):
 
         command = [f'set value_name to text returned of (display dialog "Enter {value_name} (type: integer)\nAttempts left: {attempts_left}" default answer "{default_value}")', 'return value_name']
-        applescript_user_input = python_list(command)
+        user_input = python_list(command)
 
         if user_input:
             # returned value should be a single string in a list
