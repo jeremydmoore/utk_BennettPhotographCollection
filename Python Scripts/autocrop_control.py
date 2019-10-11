@@ -1,7 +1,6 @@
 # ============ imports ============ #
 import applescript
 import capture_one_pro_12 as co
-# from capture_one_pro_12 import get_selected_variants, Document, Variant
 from pathlib import Path
 
 # ============ variables ============ #
@@ -34,5 +33,16 @@ if __name__ == '__main__':
     # process each image -- once i get everything, may be able to map?
     for selected_variant in selected_variants_list:
         variant = co.Variant(selected_variant)
+        applescript.display_dialog(f'document: {variant.document}')
+        applescript.display_dialog(f'variant id: {variant.id}')
+
+        # test_command = [f'Tell application \"Capture One 12\" to set adjustment_values to rotation of adjustments of variant {variant.id} in document {variant.document}', 'return adjustment_values']
+        # test_output = applescript.process(test_command)
+        # applescript.display_dialog(f'output: {test_output}')
+        test_value = co.get_adjustment_values(variant.document, variant.id, 'rotation')
+        applescript.display_dialog(f'rotation before: {test_value}')
+        test_value = co.set_adjustment(variant.document, variant.id, 'rotation', '0.0')
+        applescript.display_dialog(f'rotation after: {test_value}')
+        # rotation_value = variant.reset_rotation()
 
     applescript.display_dialog(end_message)

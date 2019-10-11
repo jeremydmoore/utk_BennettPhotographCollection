@@ -49,14 +49,75 @@ def get_selected_variants():
 
     return selected_variants_list
 
-
-def set_value():
-    # command = command_stub +
+def set_crop(document, variant_id, crop_box):
     pass
 
 
-def reset(value):
+def set_adjustment(document, variant_id, adjustment, value):
+
+    # returned_list is [Boolean, document, variant_id]
+    reset_variant_list = do_i_have_to_reset_the_primary_variant(document, variant_id)
+
+    # set adjustment to new value
+    command = command_stub + [f'{tell_co12} to set {adjustment} of adjustments of primary variant to "{value}"']
+    applescript.process(command)
+
+    # get adjustment values list and return
+    adjustment_values_list = get_adjustment_values(document, variant_id, adjustment)
+
+    if reset_variant_list[0] is True:
+        set_variant_as_primary(reset_variant_list[1], reset_variant_list[2])
+
+    return adjustment_values_list
+
+
+def get_adjustment_values(document, variant_id, adjustment):
+
+    # returned_list is [Boolean, document, variant_id]
+    reset_variant_list = do_i_have_to_reset_the_primary_variant(document, variant_id)
+
+    command = command_stub + [f'{tell_co12} to set adjustment_values to {adjustment} of adjustments of primary variant', 'return adjustment_values']
+    adjustment_values_list = applescript.python_list(command)
+
+    if reset_variant_list[0] is True:
+        set_variant_as_primary(reset_variant_list[1], reset_variant_list[2])
+
+    return adjustment_values_list
+
+def reset_adjustment(adjustment):
     pass
+
+def get_primary_variant_id():
+    command = command_stub + [f'{tell_co12} to set primary_variant_id to id of primary variant', 'return primary_variant_id']
+    primary_variant_id = applescript.python_list(command)[0]
+    return primary_variant_id
+
+def get_primary_variant_document():
+    command = command_stub + [f'{tell_co12} to set primary_variant_document to document of primary variant', 'return primary_variant_document']
+    primary_variant_document = applescript.python_list(command)[0]
+    return get_primary_variant_document
+
+def set_variant_as_primary(document, variant_id):
+    command = command_stub + [f'{tell_co12} to set primary variant to variant {variant_id} in document {document}']
+    applescript.process(command)
+    new_primary_variant_id = get_primary_variant_id()
+    if variant_id != new_primary_variant_id:
+        applescript.display_dialog(f'ERROR: new id {new_primary_variant_id} != wanted value {variant_id}')
+    return
+
+def do_i_have_to_reset_the_primary_variant(document, variant_id):
+
+    old_primary_variant_document = get_primary_variant_document()
+    old_primary_variant_id = get_primary_variant_id()
+    reset_variant_list = [False, old_primary_variant_document, old_primary_variant_id]
+
+    # check if we need to change the variant or not
+    if old_primary_variant_document != document and old_primary_variant_id != variant_id:
+        set_variant_as_primary(document, variant_id)
+        reset_variant_list[0] = True
+
+    return reset_variant_list
+
 
 
 class Variant():
@@ -80,4 +141,7 @@ class Variant():
 
 
     def reset_rotation(self):
-        pass
+        rotation_values_list = set_adjustment(self.document, self.id, 'rotation', '0.0')
+        rotation_value = rotation_values_list[0]
+        applescript.display_dialog(f'rotation value: {rotation_value}')
+        return rotation_value
